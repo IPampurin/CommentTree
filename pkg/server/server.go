@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/IPampurin/CommentTree/pkg/api"
 	"github.com/IPampurin/CommentTree/pkg/configuration"
-	"github.com/IPampurin/CommentTree/pkg/service"
 	"github.com/gin-gonic/gin"
 	"github.com/wb-go/wbf/ginext"
 	"github.com/wb-go/wbf/logger"

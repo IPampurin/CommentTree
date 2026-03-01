@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/IPampurin/CommentTree/pkg/configuration"
-	"github.com/IPampurin/CommentTree/pkg/db"
 	"github.com/IPampurin/CommentTree/pkg/server"
 	"github.com/wb-go/wbf/logger"
 )
