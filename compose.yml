@@ -2,9 +2,9 @@ version: '3.9'
 
 services:
   
-  url-shortener:
+  commentTree:
     build: .
-    container_name: url-shortener
+    container_name: commentTree
     ports:
       - ${SERVICE_PORT}:8081
     env_file:
@@ -12,11 +12,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy 
     stop_grace_period: 45s
     networks:
-      - shortener-network
+      - commentTree-network
 
   postgres:
     image: postgres:16
@@ -36,32 +34,11 @@ services:
       retries: 10
       start_period: 10s    
     networks:
-      - shortener-network
-
-  redis:
-    image: redis:7
-    container_name: ${REDIS_HOST_NAME:-redis}
-    ports:
-      - ${REDIS_PORT}:6379
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_TTL=${REDIS_TTL}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 5s    
-    networks:
-      - shortener-network
+      - commentTree-network
 
 volumes:
   postgres-db:
-  redis_data:
 
 networks:
-  shortener-network:
+  commentTree-network:
     driver: bridge

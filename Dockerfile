@@ -17,4 +17,4 @@ RUN apk --no-cache add ca-certificates tzdata
 COPY --from=builder /app .
 COPY web/ ./web/
 
-CMD ["./UrlShortener"]
+CMD ["./CommentTree"]

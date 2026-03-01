@@ -7,11 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/IPampurin/UrlShortener/pkg/cache"
-	"github.com/IPampurin/UrlShortener/pkg/configuration"
-	"github.com/IPampurin/UrlShortener/pkg/db"
-	"github.com/IPampurin/UrlShortener/pkg/server"
-	"github.com/IPampurin/UrlShortener/pkg/service"
+	"github.com/IPampurin/CommentTree/pkg/configuration"
+	"github.com/IPampurin/CommentTree/pkg/db"
+	"github.com/IPampurin/CommentTree/pkg/server"
 	"github.com/wb-go/wbf/logger"
 )
 
@@ -33,7 +31,7 @@ func main() {
 	// настраиваем логгер
 	appLogger, err := logger.InitLogger(
 		logger.ZapEngine,
-		"UrlShortener",
+		"CommentTree",
 		os.Getenv("APP_ENV"), // пока оставим пустым
 		logger.WithLevel(logger.InfoLevel),
 	)
@@ -50,14 +48,8 @@ func main() {
 	}
 	defer func() { _ = db.CloseDB(storage) }()
 
-	// получаем экземпляр кэша
-	cache, err := cache.InitCache(ctx, storage, &cfg.Redis, appLogger)
-	if err != nil {
-		appLogger.Warn("кэш не работает", "error", err)
-	}
-
 	// получаем экземпляр слоя бизнес-логики
-	service := service.InitService(ctx, storage, cache)
+	service := service.InitService(ctx, storage)
 
 	// запускаем сервер
 	err = server.Run(ctx, &cfg.Server, service, appLogger)

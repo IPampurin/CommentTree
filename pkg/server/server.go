@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/IPampurin/UrlShortener/pkg/api"
-	"github.com/IPampurin/UrlShortener/pkg/configuration"
-	"github.com/IPampurin/UrlShortener/pkg/service"
+	"github.com/IPampurin/CommentTree/pkg/api"
+	"github.com/IPampurin/CommentTree/pkg/configuration"
+	"github.com/IPampurin/CommentTree/pkg/service"
 	"github.com/gin-gonic/gin"
 	"github.com/wb-go/wbf/ginext"
 	"github.com/wb-go/wbf/logger"
@@ -32,12 +32,9 @@ func Run(ctx context.Context, cfgServer *configuration.ConfServer, service *serv
 	})
 
 	// регистрируем эндпоинты
-	engine.POST("/shorten", api.CreateShortLink(service, log))               // создание новой сокращённой ссылки
-	engine.GET("/s/:short_url", api.Redirect(service, log))                  // переход по короткой ссылке
-	engine.GET("/analytics/:short_url", api.GetAnalytics(service, log))      // получение аналитики (число и время переходов, User-Agent)
-	engine.GET("/links", api.GetLinks(service, log))                         // список последних ссылок для UI
-	engine.GET("/links/search/original", api.SearchByOriginal(service, log)) // поиск по OriginalURL
-	engine.GET("/links/search/short", api.SearchByShort(service, log))       // поиск по ShortURL
+	engine.POST("/comments", api.CreateShortLink(service, log))     // создание комментария (с указанием родительского)
+	engine.GET("/comments?parent={id}", api.Redirect(service, log)) // получение комментария и всех вложенных
+	engine.DELETE("/comments/{id}", api.GetAnalytics(service, log)) // удаление комментария и всех вложенных под ним
 
 	// раздаём статические файлы из папки ./web
 	engine.Static("/static", "./web")
