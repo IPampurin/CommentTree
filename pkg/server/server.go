@@ -30,9 +30,10 @@ func Run(ctx context.Context, cfgServer *configuration.ConfServer, service *serv
 	})
 
 	// регистрируем эндпоинты
-	engine.POST("/comments", api.CreateShortLink(service, log))     // создание комментария (с указанием родительского)
-	engine.GET("/comments?parent={id}", api.Redirect(service, log)) // получение комментария и всех вложенных
-	engine.DELETE("/comments/{id}", api.GetAnalytics(service, log)) // удаление комментария и всех вложенных под ним
+	engine.POST("/comments", api.CreateComment(service, log))          // создание комментария (с указанием родительского)
+	engine.GET("/comments/", api.GetComment(service, log))             // получение комментария и всех вложенных
+	engine.DELETE("/comments/", api.DeleteComment(service, log))       // удаление комментария и всех вложенных под ним
+	engine.GET("/comments/search", api.SearchInComments(service, log)) // поиск по комментариям
 
 	// раздаём статические файлы из папки ./web
 	engine.Static("/static", "./web")
