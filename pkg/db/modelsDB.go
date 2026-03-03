@@ -4,11 +4,16 @@ import (
 	"time"
 )
 
-// Comment представляет запись о комментарии
+// Comment представляет запись из таблицы comments
 type Comment struct {
-	ID            int        // идентификатор комментария (автоинкремент)
-	ParentID      int        // ID родительского комментария, 0 для корневых
-	Text          string     // текст комментария
-	CreatedAt     time.Time  // дата и время создания комментария
-	ChildComments []*Comment // дочерние комментарии
+	ID        int       `json:"id"`         // идентификатор комментария (автоинкремент)
+	ParentID  *int      `json:"parent_id"`  // ID родительского комментария, NULL для корневых
+	Text      string    `json:"text"`       // текст комментария
+	CreatedAt time.Time `json:"created_at"` // дата и время создания комментария
+}
+
+// CommentNode используется для построения дерева комментариев (с детьми)
+type CommentNode struct {
+	Comment  *Comment       `json:"comment"`
+	Children []*CommentNode `json:"children"`
 }
