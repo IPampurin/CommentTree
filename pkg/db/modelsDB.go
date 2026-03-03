@@ -14,6 +14,6 @@ type Comment struct {
 
 // CommentNode используется для построения дерева комментариев (с детьми)
 type CommentNode struct {
-	Comment  *Comment       `json:"comment"`
-	Children []*CommentNode `json:"children"`
+	Comment  *Comment       `json:"comment"`  // сам комментарий
+	Children []*CommentNode `json:"children"` //  дочерние комментарии
 }

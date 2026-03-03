@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/IPampurin/CommentTree/pkg/configuration"
+	"github.com/IPampurin/CommentTree/pkg/service"
 	"github.com/gin-gonic/gin"
 	"github.com/wb-go/wbf/ginext"
 	"github.com/wb-go/wbf/logger"
