@@ -8,7 +8,7 @@ import (
 
 // Service инкапсулирует интерфейсный тип
 type Service struct {
-	db.CommentsMethods
+	storage db.CommentsMethods
 }
 
 // InitService возвращает экземпляр типа Service
