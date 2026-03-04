@@ -2,9 +2,9 @@ version: '3.9'
 
 services:
   
-  commentTree:
+  comment-tree:
     build: .
-    container_name: commentTree
+    container_name: comment-tree
     ports:
       - ${SERVICE_PORT}:8081
     env_file:
@@ -14,7 +14,7 @@ services:
         condition: service_healthy
     stop_grace_period: 45s
     networks:
-      - commentTree-network
+      - comment-tree-network
 
   postgres:
     image: postgres:16
@@ -34,11 +34,11 @@ services:
       retries: 10
       start_period: 10s    
     networks:
-      - commentTree-network
+      - comment-tree-network
 
 volumes:
   postgres-db:
 
 networks:
-  commentTree-network:
+  comment-tree-network:
     driver: bridge

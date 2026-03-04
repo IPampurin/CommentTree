@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CommentTree — древовидные комментарии</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; line-height: 1.5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .search { margin-bottom: 20px; }
+        .comments { border-top: 1px solid #ccc; margin-top: 20px; }
+        .comment { margin-left: 20px; border-left: 2px solid #eee; padding-left: 10px; margin-top: 10px; }
+        .comment-meta { font-size: 0.8em; color: gray; }
+        .comment-actions { margin-top: 5px; }
+        .comment-actions button { margin-right: 5px; }
+        form { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; }
+        textarea { width: 100%; box-sizing: border-box; }
+        .error { color: red; }
+        .search-results { margin-top: 20px; }
+        .result-item { padding: 5px; border-bottom: 1px solid #eee; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Древовидные комментарии</h1>
+
+        <!-- Поиск -->
+        <div class="search">
+            <input type="text" id="searchInput" placeholder="Поиск по тексту...">
+            <button id="searchBtn">Найти</button>
+        </div>
+
+        <!-- Контейнер для комментариев (дерево) -->
+        <div id="commentsContainer" class="comments"></div>
+
+        <!-- Форма создания комментария -->
+        <form id="commentForm">
+            <h3 id="formTitle">Новый комментарий</h3>
+            <input type="hidden" id="parentId" name="parent_id" value="">
+            <textarea id="commentText" name="text" rows="3" placeholder="Текст комментария" required></textarea>
+            <br>
+            <button type="submit">Отправить</button>
+            <button type="button" id="cancelReplyBtn" class="hidden">Отмена ответа</button>
+        </form>
+    </div>
+
+    <script>
+        // Базовый URL API
+        const API_BASE = '/comments';
+
+        // Элементы DOM
+        const commentsContainer = document.getElementById('commentsContainer');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const commentForm = document.getElementById('commentForm');
+        const parentIdInput = document.getElementById('parentId');
+        const commentText = document.getElementById('commentText');
+        const formTitle = document.getElementById('formTitle');
+        const cancelReplyBtn = document.getElementById('cancelReplyBtn');
+
+        // Состояние: текущий родитель для формы (0 - корневой)
+        let currentParent = 0;
+
+        // --- Вспомогательные функции ---
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(isoString) {
+            const d = new Date(isoString);
+            return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Показать ошибку (можно улучшить)
+        function showError(message) {
+            alert('Ошибка: ' + message);
+        }
+
+        // --- Загрузка и отображение корневых комментариев (с пагинацией) ---
+        async function loadRootComments(page = 1, limit = 10) {
+            try {
+                const url = `${API_BASE}?page=${page}&limit=${limit}&sort=created_at DESC`;
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                renderCommentsList(data.comments, 0); // 0 - корневой уровень
+                // TODO: добавить пагинацию (кнопки "Загрузить ещё")
+            } catch (err) {
+                showError('Не удалось загрузить комментарии: ' + err.message);
+            }
+        }
+
+        // Рекурсивное отображение дерева комментариев из плоского списка (с children)
+        function renderCommentsList(comments, level = 0) {
+            if (!comments || comments.length === 0) return;
+            comments.forEach(node => {
+                renderComment(node, level);
+                if (node.children && node.children.length) {
+                    renderCommentsList(node.children, level + 1);
+                }
+            });
+        }
+
+        // Отрисовка одного комментария
+        function renderComment(node, level) {
+            const commentDiv = document.createElement('div');
+            commentDiv.className = 'comment';
+            commentDiv.dataset.id = node.comment.id;
+            commentDiv.style.marginLeft = (level * 20) + 'px';
+
+            const meta = document.createElement('div');
+            meta.className = 'comment-meta';
+            meta.innerHTML = `#${node.comment.id} · ${formatDate(node.comment.created_at)}`;
+
+            const textDiv = document.createElement('div');
+            textDiv.innerHTML = escapeHtml(node.comment.text);
+
+            const actions = document.createElement('div');
+            actions.className = 'comment-actions';
+            const replyBtn = document.createElement('button');
+            replyBtn.textContent = 'Ответить';
+            replyBtn.onclick = () => setReplyParent(node.comment.id);
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Удалить';
+            deleteBtn.onclick = () => deleteComment(node.comment.id);
+            actions.appendChild(replyBtn);
+            actions.appendChild(deleteBtn);
+
+            commentDiv.appendChild(meta);
+            commentDiv.appendChild(textDiv);
+            commentDiv.appendChild(actions);
+            commentsContainer.appendChild(commentDiv);
+        }
+
+        // Установка родителя для ответа
+        function setReplyParent(parentId) {
+            currentParent = parentId;
+            parentIdInput.value = parentId;
+            formTitle.textContent = parentId === 0 ? 'Новый комментарий' : `Ответ к комментарию #${parentId}`;
+            commentText.focus();
+            cancelReplyBtn.classList.remove('hidden');
+        }
+
+        // Отмена ответа (переключение на корневой)
+        cancelReplyBtn.addEventListener('click', () => {
+            setReplyParent(0);
+            cancelReplyBtn.classList.add('hidden');
+        });
+
+        // --- Создание комментария ---
+        commentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = commentText.value.trim();
+            if (!text) return;
+
+            const payload = {
+                parent_id: currentParent === 0 ? null : currentParent,
+                text: text
+            };
+
+            try {
+                const resp = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                // Сброс формы
+                commentText.value = '';
+                setReplyParent(0); // сбрасываем в корень
+                cancelReplyBtn.classList.add('hidden');
+                // Перезагружаем дерево
+                await refreshComments();
+            } catch (err) {
+                showError('Не удалось создать комментарий: ' + err.message);
+            }
+        });
+
+        // --- Удаление комментария ---
+        async function deleteComment(id) {
+            if (!confirm('Удалить комментарий и все ответы?')) return;
+            try {
+                const resp = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                await refreshComments();
+            } catch (err) {
+                showError('Не удалось удалить комментарий: ' + err.message);
+            }
+        }
+
+        // --- Поиск ---
+        searchBtn.addEventListener('click', async () => {
+            const query = searchInput.value.trim();
+            if (!query) return;
+            try {
+                const resp = await fetch(`/comments/search?q=${encodeURIComponent(query)}&page=1&limit=50`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                displaySearchResults(data.comments);
+            } catch (err) {
+                showError('Ошибка поиска: ' + err.message);
+            }
+        });
+
+        // Отображение результатов поиска (плоский список)
+        function displaySearchResults(comments) {
+            commentsContainer.innerHTML = ''; // очищаем
+            if (!comments.length) {
+                commentsContainer.innerHTML = '<p>Ничего не найдено</p>';
+                return;
+            }
+            const heading = document.createElement('h3');
+            heading.textContent = 'Результаты поиска:';
+            commentsContainer.appendChild(heading);
+            comments.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `<span class="comment-meta">#${c.id} (родитель: ${c.parent_id === null ? 'корневой' : '#'+c.parent_id}) · ${formatDate(c.created_at)}</span><br>${escapeHtml(c.text)}`;
+                commentsContainer.appendChild(div);
+            });
+        }
+
+        // --- Обновление дерева комментариев (загрузка корневых) ---
+        async function refreshComments() {
+            commentsContainer.innerHTML = ''; // очищаем
+            await loadRootComments(1, 10);
+        }
+
+        // --- Инициализация при загрузке страницы ---
+        refreshComments();
+
+        // Поддержка клавиши Escape для отмены ответа
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !cancelReplyBtn.classList.contains('hidden')) {
+                setReplyParent(0);
+                cancelReplyBtn.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
