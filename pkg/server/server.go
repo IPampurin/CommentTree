@@ -33,7 +33,7 @@ func Run(ctx context.Context, cfgServer *configuration.ConfServer, service *serv
 
 	// регистрируем эндпоинты
 	engine.POST("/comments", api.CreateComment(service, log))        // создание комментария (с указанием родительского)
-	engine.GET("/comments/", api.GetComments(service, log))          // получение комментария и всех вложенных
+	engine.GET("/comments", api.GetComments(service, log))           // получение комментария и всех вложенных
 	engine.DELETE("/comments/:id", api.DeleteComment(service, log))  // удаление комментария и всех вложенных под ним
 	engine.GET("/comments/search", api.SearchComments(service, log)) // поиск по комментариям
 
