@@ -95,30 +95,35 @@ func GetComments(svc service.CommentService, log logger.Logger) gin.HandlerFunc 
 			return
 		}
 
-		// иначе возвращаем плоский список корневых комментариев с пагинацией
-		comments, total, err := svc.GetCommentsByParent(c.Request.Context(), nil, page, limit, sortBy)
+		// иначе возвращаем корневые комментарии в виде деревьев с пагинацией
+		// получаем плоский список корневых комментариев
+		rootComments, total, err := svc.GetCommentsByParent(c.Request.Context(), nil, page, limit, sortBy)
 		if err != nil {
-			log.Error("ошибка получения комментариев", "error", err)
+			log.Error("ошибка получения корневых комментариев", "error", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "не удалось получить комментарии"})
 			return
 		}
 
-		// преобразуем в response
-		respComments := make([]*commentResponse, len(comments))
-		for i, comm := range comments {
-			respComments[i] = &commentResponse{
-				ID:        comm.ID,
-				ParentID:  comm.ParentID,
-				Text:      comm.Text,
-				CreatedAt: comm.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		// для каждого корневого комментария загружаем полное дерево
+		trees := make([]*treeResponse, 0, len(rootComments))
+		for _, comm := range rootComments {
+			tree, err := svc.GetCommentTree(c.Request.Context(), comm.ID)
+			if err != nil {
+				log.Error("ошибка получения дерева для комментария", "id", comm.ID, "error", err)
+				// пропускаем этот комментарий, чтобы не ломать весь список
+				continue
+			}
+			if tree != nil {
+				trees = append(trees, convertNodeToResponse(tree))
 			}
 		}
 
-		c.JSON(http.StatusOK, commentsListResponse{
-			Comments: respComments,
-			Total:    total,
-			Page:     page,
-			Limit:    limit,
+		// отвечаем объектом, содержащим массив деревьев и метаданные пагинации
+		c.JSON(http.StatusOK, gin.H{
+			"comments": trees,
+			"total":    total,
+			"page":     page,
+			"limit":    limit,
 		})
 	}
 }

@@ -22,14 +22,6 @@ type treeResponse struct {
 	Children []*treeResponse  `json:"children"`
 }
 
-// commentsListResponse ответ со списком комментариев и метаданными пагинации
-type commentsListResponse struct {
-	Comments []*commentResponse `json:"comments"`
-	Total    int                `json:"total"`
-	Page     int                `json:"page"`
-	Limit    int                `json:"limit"`
-}
-
 // searchResponse ответ поиска
 type searchResponse struct {
 	Comments []*commentResponse `json:"comments"`
